@@ -16,14 +16,17 @@ document.body.insertAdjacentHTML("beforeend",`<footer><div class="wrap"><span>©
 document.querySelectorAll("[data-i]").forEach(e=>e.insertAdjacentHTML("afterbegin",ic(e.dataset.i)));
 function tick(){
 // volgende stream (Amsterdam tijd)
-const D=["maandag","dinsdag","woensdag","donderdag","vrijdag","zaterdag","zondag"],S=[[3,18,30],[5,18,30],[6,15,0]];
+const D=["maandag","dinsdag","woensdag","donderdag","vrijdag","zaterdag","zondag"],S=[[1,null,null],[3,18,30],[5,18,30],[6,15,0]];
 const p=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Amsterdam",weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()).map(x=>[x.type,x.value]));
-const now=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].indexOf(p.weekday)*1440+ +p.hour*60+ +p.minute;
-let best=null;S.forEach(([d,h,m])=>{let x=(d*1440+h*60+m-now+10080)%10080||10080;if(!best||x<best.x)best={x,d,h,m}});
-const t=`${String(best.h).padStart(2,"0")}:${String(best.m).padStart(2,"0")}`,dd=Math.floor(best.x/1440),hh=Math.floor(best.x%1440/60),mm=best.x%60;
-const left=dd?`${dd} d ${hh} u`:hh?`${hh} u ${mm} min`:`${mm} min`;
-document.querySelectorAll(".next-day").forEach(e=>e.textContent=`${D[best.d]} ${t}`);
-document.querySelectorAll(".next-in").forEach(e=>e.textContent=`Over ${left} · Nederlandse tijd`);
+const today=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].indexOf(p.weekday),now=today*1440+ +p.hour*60+ +p.minute;
+// streams zonder vaste tijd (h=null) tellen als hele dag: vandaag = nu, anders vanaf middernacht
+let best=null;S.forEach(([d,h,m])=>{let x=h===null?(d===today?0:((d-today+7)%7)*1440):((d*1440+h*60+m-now+10080)%10080||10080);if(!best||x<best.x)best={x,d,h,m}});
+const dd=Math.floor(best.x/1440),hh=Math.floor(best.x%1440/60),mm=best.x%60;
+let t,left;
+if(best.h===null){t="";const n=(best.d-today+7)%7;left=n===0?"Vandaag":n===1?"Morgen":`Over ${n} dagen`}
+else{t=" "+String(best.h).padStart(2,"0")+":"+String(best.m).padStart(2,"0");left="Over "+(dd?`${dd} d ${hh} u`:hh?`${hh} u ${mm} min`:`${mm} min`)}
+document.querySelectorAll(".next-day").forEach(e=>e.textContent=`${D[best.d]}${t}`);
+document.querySelectorAll(".next-in").forEach(e=>e.textContent=`${left} · Nederlandse tijd`);
 document.querySelectorAll("[data-d]").forEach(e=>{if(+e.dataset.d===best.d){e.classList.add("up");e.querySelector(".tag").textContent="Eerstvolgende stream"}});
 }
 tick();setInterval(tick,30000);
